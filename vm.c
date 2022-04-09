@@ -317,6 +317,32 @@ clearpteu(pde_t *pgdir, char *uva)
   *pte &= ~PTE_U;
 }
 
+int
+mprotect(void *addr, int len)
+{
+  pte_t *page_table_entry;
+  uint page = PGROUNDDOWN((uint)addr);
+  struct proc *curproc = myproc();
+  if(len <= 0){
+    return -1;
+  }
+
+  cprintf("addr: %d\n", addr);
+  cprintf("len: %d\n", len);
+
+  while(page < ((uint) addr+len)) {
+    page_table_entry = walkpgdir(curproc->pgdir,(void *) page, 0);
+    if (page_table_entry == 0)
+    {
+      panic("mprotect");
+    }
+    *page_table_entry &= ~PTE_W;
+    page += PGSIZE;
+  }
+  lcr3(V2P(curproc->pgdir));
+  return 0;
+}
+
 // Given a parent process's page table, create a copy
 // of it for a child.
 pde_t*
@@ -398,4 +424,3 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
 // Blank page.
 //PAGEBREAK!
 // Blank page.
-
