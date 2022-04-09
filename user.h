@@ -25,7 +25,7 @@ int sleep(int);
 int uptime(void);
 
 // ulib.c
-int stat(const char*, struct stat*);
+int stat(const char *, struct stat *);
 char* strcpy(char*, const char*);
 void *memmove(void*, const void*, int);
 char* strchr(const char*, char c);
@@ -37,3 +37,5 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
+int mprotect(void *addr, int len);
+int munprotect(void *addr, int len);
