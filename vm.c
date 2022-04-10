@@ -317,7 +317,7 @@ clearpteu(pde_t *pgdir, char *uva)
   *pte &= ~PTE_U;
 }
 
-void clearptew(pde_t *pgdir, char *uva)
+void clearptew(pde_t *pgdir, void *uva)
 {
   pte_t *pte;
   pte = walkpgdir(pgdir, uva, 0);
@@ -325,16 +325,12 @@ void clearptew(pde_t *pgdir, char *uva)
   {
     panic("clearptew");
   }
-  cprintf("present: %x\n", (*pte & PTE_P));
-  cprintf("user: %x\n", (*pte & PTE_U));
   cprintf("writeable: %x\n", (*pte & PTE_W));
   *pte &= ~PTE_W;
-  cprintf("present: %x\n", (*pte & PTE_P));
-  cprintf("user: %x\n", (*pte & PTE_U));
   cprintf("writeable: %x\n", (*pte & PTE_W));
 }
 
-void setptew(pde_t *pgdir, char *uva)
+void setptew(pde_t *pgdir, void *uva)
 {
   pte_t *pte;
   pte = walkpgdir(pgdir, uva, 0);
@@ -342,47 +338,37 @@ void setptew(pde_t *pgdir, char *uva)
   {
     panic("clearptew");
   }
-  cprintf("present: %x\n", (*pte & PTE_P));
-  cprintf("user: %x\n", (*pte & PTE_U));
-  cprintf("writeable: %x\n", (*pte & PTE_W));
+  cprintf("writeable: %d\n", (*pte & PTE_W));
   *pte |= PTE_W;
-  cprintf("present: %x\n", (*pte & PTE_P));
-  cprintf("user: %x\n", (*pte & PTE_U));
   cprintf("writeable: %x\n", (*pte & PTE_W));
 }
 
 int
 mprotect(void *addr, int len)
 {
-  pte_t *page_table_entry;
-  uint page = PGROUNDDOWN((uint)addr);
+  uint page = (uint)addr;
   uint base = page;
   struct proc *curproc = myproc();
-  if(len <= 0){
+  if(len <= 0)
+  {
     return -1;
   }
-
+  if(base % PGSIZE != 0)
+  {
+    return -1;
+  }
+  if(base + (len * PGSIZE) > curproc->vlimit){
+    return -1;
+  }
   cprintf("addr: %d\n", addr);
   cprintf("len: %d\n", len);
   while(page < ((uint) base+((len)*PGSIZE))) {
-    page_table_entry = walkpgdir(curproc->pgdir,(void *)page, 0);
-    if (page_table_entry == 0)
-    {
-      panic("mprotect");
-    }
-    cprintf("present: %x\n", (*page_table_entry & PTE_P));
-    cprintf("user: %x\n", (*page_table_entry & PTE_U));
-    cprintf("writeable: %x\n", (*page_table_entry & PTE_W));
-    *page_table_entry &= ~PTE_W;
-    cprintf("present: %x\n", (*page_table_entry & PTE_P));
-    cprintf("user: %x\n", (*page_table_entry & PTE_U));
-    cprintf("writeable: %x\n", (*page_table_entry & PTE_W));
+    clearptew(curproc->pgdir,(void *) page);
     page += PGSIZE;
   }
   lcr3(V2P(curproc->pgdir));
   return 0;
 }
-
 // Given a parent process's page table, create a copy
 // of it for a child.
 pde_t*
