@@ -317,6 +317,7 @@ clearpteu(pde_t *pgdir, char *uva)
   *pte &= ~PTE_U;
 }
 
+// clear the PTE_W flag on the page that contains the specified address(uva) in the provided page directory
 void clearptew(pde_t *pgdir, void *uva)
 {
   pte_t *pte;
@@ -325,11 +326,10 @@ void clearptew(pde_t *pgdir, void *uva)
   {
     panic("clearptew");
   }
-  cprintf("writeable: %x\n", (*pte & PTE_W));
   *pte &= ~PTE_W;
-  cprintf("writeable: %x\n", (*pte & PTE_W));
 }
 
+// set the PTE_W flag on the page that contains the specified address(uva) in the provided page directory
 void setptew(pde_t *pgdir, void *uva)
 {
   pte_t *pte;
@@ -338,11 +338,11 @@ void setptew(pde_t *pgdir, void *uva)
   {
     panic("clearptew");
   }
-  cprintf("writeable: %d\n", (*pte & PTE_W));
   *pte |= PTE_W;
-  cprintf("writeable: %x\n", (*pte & PTE_W));
 }
 
+// protect len number of pages, starting at addr inclusive.
+// clears the PTE_W flag on each table in our selection, making the information on the page read-only.
 int
 mprotect(void *addr, int len)
 {
@@ -351,19 +351,52 @@ mprotect(void *addr, int len)
   struct proc *curproc = myproc();
   if(len <= 0)
   {
+    cprintf("Error, can't protect %d pages, must be a positive integer >= 1.\n", len);
     return -1;
   }
   if(base % PGSIZE != 0)
   {
+    cprintf("Error, %p is not page aligned. This method only accepts page aligned addresses.\n", base);
     return -1;
   }
-  if(base + (len * PGSIZE) > curproc->vlimit){
+  if(base > curproc->vlimit || base < curproc->vbase){
+    cprintf("Error, address %p is not within the assigned address space of this process.\n", base);
     return -1;
   }
-  cprintf("addr: %d\n", addr);
-  cprintf("len: %d\n", len);
   while(page < ((uint) base+((len)*PGSIZE))) {
     clearptew(curproc->pgdir,(void *) page);
+    page += PGSIZE;
+  }
+  lcr3(V2P(curproc->pgdir));
+  return 0;
+}
+
+// unprotect len number of pages, starting at addr inclusive.
+// sets the PTE_W flag on each table in our selection, making the information on the page writeable again.
+int 
+munprotect(void *addr, int len)
+{
+  uint page = (uint)addr;
+  uint base = page;
+  struct proc *curproc = myproc();
+  if(len <= 0)
+  {
+    cprintf("Error, can't protect %d pages, must be a positive integer >= 1.\n", len);
+    return -1;
+  }
+  if(base % PGSIZE != 0)
+  {
+    cprintf("Error, %p is not page aligned. This method only accepts page aligned addresses.\n", base);
+    return -1;
+  }
+  if(base > curproc->vlimit || base < curproc->vbase)
+  {
+    cprintf("Error, address %p is not within the assigned address space of this process.\n", base);
+    return -1;
+  }
+  while (page < ((uint)base + ((len)*PGSIZE)))
+  {
+    setptew(curproc->pgdir, (void *)page);
     page += PGSIZE;
   }
   lcr3(V2P(curproc->pgdir));
