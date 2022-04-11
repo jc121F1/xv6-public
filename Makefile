@@ -178,6 +178,9 @@ UPROGS := \
 	_cat\
 	_nullderef\
 	_mprotectviolation\
+	_mprotectnegativelen\
+	_mprotectunaligned\
+	_mprotectaddroutofbounds\
 	_munprotect_test\
 	_echo\
 	_forktest\
