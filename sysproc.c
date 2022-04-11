@@ -97,17 +97,15 @@ sys_mprotect(void)
   int len;
   argint(0, &addr);
   argint(1, &len);
-  mprotect((void *)addr, len);
-  cprintf("sys_mprotect\n");
-  return 0;
+  return mprotect((void *)addr, len);
 }
 
 int 
 sys_munprotect(void)
 {
-  //void *addr;
-  //int len;
-
-  cprintf("sys_munprotect");
-  return 0;
+  int addr;
+  int len;
+  argint(0, &addr);
+  argint(1, &len);
+  return munprotect((void *)addr, len);
 }
