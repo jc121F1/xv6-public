@@ -178,6 +178,7 @@ UPROGS := \
 	_cat\
 	_nullderef\
 	_mprotectviolation\
+	_munprotect_test\
 	_echo\
 	_forktest\
 	_grep\
